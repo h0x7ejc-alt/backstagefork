@@ -1,0 +1,111 @@
+diff --git a/packages/app/src/examples/pagesPlugin.tsx b/packages/app/src/examples/pagesPlugin.tsx
+index 3d69dce677..19a841ca01 100644
+--- a/packages/app/src/examples/pagesPlugin.tsx
++++ b/packages/app/src/examples/pagesPlugin.tsx
+@@ -114,6 +114,10 @@ const IndexPage = PageBlueprint.make({
+               then refresh the app to see the pages appear.
+             </p>
+             <ul>
++              <li>
++                <Link to="/feature-flag-summary">Feature Flag Summary</Link> —
++                always accessible, summarizes all FF conditions
++              </li>
+               <li>
+                 <Link to="/feature-flag-example">Feature Flag Example</Link> —
+                 requires the <code>experimental-features</code> flag
+@@ -314,6 +318,87 @@ const AnyFlagPage = PageBlueprint.make({
+   },
+ });
+ 
++const FeatureFlagSummaryPage = PageBlueprint.make({
++  name: 'featureFlagSummary',
++  params: {
++    path: '/feature-flag-summary',
++    loader: async () => {
++      const Component = () => {
++        const indexLink = useRouteRef(indexRouteRef);
++        return (
++          <div>
++            <h1>Feature Flag Summary</h1>
++            <p>
++              This page is always accessible and lists all the feature flag examples in this app and the conditions they require.
++            </p>
++            <table
++              style={{
++                borderCollapse: 'collapse',
++                width: '100%',
++                border: '1px solid #ccc',
++                marginBottom: '1rem',
++              }}
++            >
++              <thead>
++                <tr style={{ backgroundColor: '#f9f9f9' }}>
++                  <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>Page / Component</th>
++                  <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>Path / Location</th>
++                  <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>Required Feature Flags Condition</th>
++                </tr>
++              </thead>
++              <tbody>
++                <tr>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>Feature Flag Example</td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <Link to="/feature-flag-example">/feature-flag-example</Link>
++                  </td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <code>experimental-features</code>
++                  </td>
++                </tr>
++                <tr>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>All Flags Example</td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <Link to="/all-flags-example">/all-flags-example</Link>
++                  </td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <code>experimental-features</code> AND <code>advanced-features</code>
++                  </td>
++                </tr>
++                <tr>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>Any Flag Example</td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <Link to="/any-flag-example">/any-flag-example</Link>
++                  </td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <code>experimental-features</code> OR <code>beta-access</code>
++                  </td>
++                </tr>
++                <tr>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>Feature Flagged Card</td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <Link to="/permission-card-example">/permission-card-example</Link>
++                  </td>
++                  <td style={{ border: '1px solid #ccc', padding: '8px' }}>
++                    <code>experimental-card</code>
++                  </td>
++                </tr>
++              </tbody>
++            </table>
++            <div>
++              <Link to="/settings">Go to Settings to toggle flags</Link>
++            </div>
++            <div style={{ marginTop: '1rem' }}>
++              {indexLink && <Link to={indexLink()}>Go back</Link>}
++            </div>
++          </div>
++        );
++      };
++      return <Component />;
++    },
++  },
++});
++
+ // Blueprint for cards that attach to the PermissionCardPage below.
+ //
+ // Each card receives a title and description and renders a simple bordered card.
+@@ -481,6 +566,7 @@ export const pagesPlugin = createFrontendPlugin({
+     IndexPage,
+     Page1,
+     ExternalPage,
++    FeatureFlagSummaryPage,
+     FeatureFlagPage,
+     AllFlagsPage,
+     AnyFlagPage,
