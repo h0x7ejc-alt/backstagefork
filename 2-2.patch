@@ -1,0 +1,55 @@
+diff --git a/packages/app/src/modules/BuiTemplateCard.tsx b/packages/app/src/modules/BuiTemplateCard.tsx
+index d2d765abd7..9d3be49b88 100644
+--- a/packages/app/src/modules/BuiTemplateCard.tsx
++++ b/packages/app/src/modules/BuiTemplateCard.tsx
+@@ -35,8 +35,6 @@ import {
+ import type { TemplateCardComponentProps } from '@backstage/plugin-scaffolder-react/alpha';
+ import styles from './BuiTemplateCard.module.css';
+ 
+-const MAX_TAGS = 4;
+-
+ export function BuiTemplateCard(props: TemplateCardComponentProps) {
+   const { template, onSelected } = props;
+   const analytics = useAnalytics();
+@@ -46,14 +44,20 @@ export function BuiTemplateCard(props: TemplateCardComponentProps) {
+     metadata: { tags, description, name, title },
+   } = template;
+ 
+-  const visibleTags = useMemo(
+-    () =>
+-      Array.from(new Set([type, ...(tags ?? [])].filter(Boolean))).slice(
+-        0,
+-        MAX_TAGS,
+-      ),
+-    [type, tags],
+-  );
++  const { visibleTags, extraCount } = useMemo(() => {
++    const typeTag = type ? [type] : [];
++    const normalTags = Array.from(new Set(tags ?? [])).filter(
++      t => t && t !== type,
++    ) as string[];
++
++    const visibleNormalTags = normalTags.slice(0, 2);
++    const extra = normalTags.length - visibleNormalTags.length;
++
++    return {
++      visibleTags: [...typeTag, ...visibleNormalTags],
++      extraCount: extra,
++    };
++  }, [type, tags]);
+ 
+   const owner = getEntityRelations(template, RELATION_OWNED_BY)[0];
+ 
+@@ -89,8 +93,11 @@ export function BuiTemplateCard(props: TemplateCardComponentProps) {
+         {visibleTags.length > 0 && (
+           <TagGroup>
+             {visibleTags.map(t => (
+-              <Tag key={t}>{t!}</Tag>
++              <Tag key={t}>{t}</Tag>
+             ))}
++            {extraCount > 0 && (
++              <Tag key="more">+{extraCount} more</Tag>
++            )}
+           </TagGroup>
+         )}
+       </Box>
