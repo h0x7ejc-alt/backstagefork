@@ -23,10 +23,11 @@ import homePlugin from '@backstage/plugin-home/alpha';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import {
   HomePageLayoutBlueprint,
+  HomePageWidgetBlueprint,
   type HomePageLayoutProps,
 } from '@backstage/plugin-home-react/alpha';
 import { Fragment } from 'react';
-import { Content, Header, Page } from '@backstage/core-components';
+import { Content, Header, Link, Page } from '@backstage/core-components';
 import {
   CustomHomepageGrid,
   WelcomeTitle,
@@ -79,6 +80,28 @@ const clockConfigs: ClockConfig[] = [
   { label: 'TYO', timeZone: 'Asia/Tokyo' },
 ];
 
+const homePagePluginInfoSummaryWidget = HomePageWidgetBlueprint.make({
+  name: 'plugin-info-summary-shortcut',
+  params: {
+    title: 'Plugin Info Summary',
+    description: 'Shortcut to the readable plugin metadata debug page',
+    components: async () => ({
+      Content: () => (
+        <div>
+          <p style={{ marginTop: 0 }}>
+            Open the readable debug page for the example pages plugin metadata.
+          </p>
+          <Link to="/plugin-info-summary">Go to Plugin Info Summary</Link>
+        </div>
+      ),
+    }),
+    layout: {
+      width: { defaultColumns: 4, minColumns: 3 },
+      height: { defaultRows: 2, minRows: 2 },
+    },
+  },
+});
+
 const customHomePageModule = createFrontendModule({
   pluginId: 'home',
   extensions: [
@@ -105,10 +128,10 @@ const customHomePageModule = createFrontendModule({
           },
       },
     }),
+    homePagePluginInfoSummaryWidget,
   ],
 });
 
-// customize catalog example
 const customizedCatalog = catalogPlugin.withOverrides({
   extensions: [
     catalogPlugin.getExtension('entity-content:catalog/overview').override({

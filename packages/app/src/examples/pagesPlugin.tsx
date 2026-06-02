@@ -32,23 +32,108 @@ import { Route, Routes } from 'react-router-dom';
 
 const indexRouteRef = createRouteRef();
 const page1RouteRef = createRouteRef();
+const pluginInfoSummaryRouteRef = createRouteRef();
 export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
 export const pageXRouteRef = createRouteRef();
 
-function PluginInfo() {
+function PluginInfoSummary() {
   const node = useAppNode();
   const [info, setInfo] = useState<FrontendPluginInfo | undefined>(undefined);
+  const [loadError, setLoadError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    node?.spec.plugin?.info().then(setInfo);
+    let cancelled = false;
+
+    async function loadInfo() {
+      setLoadError(undefined);
+
+      try {
+        const resolvedInfo = await node?.spec.plugin?.info();
+        if (!cancelled) {
+          setInfo(resolvedInfo);
+        }
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setLoadError(
+            error instanceof Error ? error.message : 'Failed to load plugin info',
+          );
+        }
+      }
+    }
+
+    loadInfo();
+
+    return () => {
+      cancelled = true;
+    };
   }, [node]);
+
+  const isLoading = !info && !loadError;
+  const pluginId = node?.spec.plugin?.pluginId ?? 'Unavailable';
+  const summaryItems = [
+    {
+      label: 'Package name',
+      value: info?.packageName ?? (isLoading ? 'Loading…' : 'Unavailable'),
+    },
+    { label: 'Plugin ID', value: pluginId },
+    { label: 'Extension count', value: pluginExtensions.length.toString() },
+    {
+      label: 'exampleFieldDoNotUse',
+      value:
+        info?.exampleFieldDoNotUse ??
+        (isLoading ? 'Loading…' : 'Unavailable'),
+    },
+  ];
 
   return (
     <div>
-      <h3>Plugin Info</h3>
-      <pre>{JSON.stringify(info, null, 2)}</pre>
+      <h1>Plugin Info Summary</h1>
+      <p>
+        A readable debug view of the resolved plugin metadata for the example
+        pages plugin.
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1rem',
+          marginTop: '1rem',
+        }}
+      >
+        {summaryItems.map(item => (
+          <div
+            key={item.label}
+            style={{
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              padding: '1rem',
+            }}
+          >
+            <div
+              style={{
+                color: '#555',
+                fontSize: '0.875rem',
+                marginBottom: '0.5rem',
+              }}
+            >
+              {item.label}
+            </div>
+            <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+      {info?.description && (
+        <p style={{ marginTop: '1rem' }}>
+          <strong>Description:</strong> {info.description}
+        </p>
+      )}
+      {loadError && (
+        <p style={{ color: '#b71c1c', marginTop: '1rem' }}>{loadError}</p>
+      )}
     </div>
   );
 }
@@ -61,6 +146,7 @@ const IndexPage = PageBlueprint.make({
     loader: async () => {
       const Component = () => {
         const page1Link = useRouteRef(page1RouteRef);
+        const pluginInfoSummaryLink = useRouteRef(pluginInfoSummaryRouteRef);
         return (
           <div>
             <h1>Example Pages Plugin</h1>
@@ -68,6 +154,11 @@ const IndexPage = PageBlueprint.make({
             {page1Link && (
               <div>
                 <Link to={page1Link()}>Page 1</Link>
+              </div>
+            )}
+            {pluginInfoSummaryLink && (
+              <div>
+                <Link to={pluginInfoSummaryLink()}>Plugin Info Summary</Link>
               </div>
             )}
             <div>
@@ -129,8 +220,6 @@ const IndexPage = PageBlueprint.make({
                 <code>beta-access</code> (<code>$any</code>)
               </li>
             </ul>
-
-            <PluginInfo />
           </div>
         );
       };
@@ -185,6 +274,26 @@ const ExternalPage = PageBlueprint.make({
         return (
           <div>
             <h1>This is page X</h1>
+            {indexLink && <Link to={indexLink()}>Go back</Link>}
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
+
+const PluginInfoSummaryPage = PageBlueprint.make({
+  name: 'pluginInfoSummary',
+  params: {
+    path: '/plugin-info-summary',
+    routeRef: pluginInfoSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const indexLink = useRouteRef(indexRouteRef);
+        return (
+          <div>
+            <PluginInfoSummary />
             {indexLink && <Link to={indexLink()}>Go back</Link>}
           </div>
         );
@@ -458,6 +567,21 @@ const PermissionGatedPage = PageBlueprint.make({
   if: { permissions: { $contains: 'catalog.entity.create' } },
 });
 
+const pluginExtensions = [
+  IndexPage,
+  Page1,
+  PluginInfoSummaryPage,
+  ExternalPage,
+  FeatureFlagPage,
+  AllFlagsPage,
+  AnyFlagPage,
+  PermissionCardPage,
+  PublicCard,
+  RestrictedCard,
+  PermissionGatedPage,
+  FeatureFlagCard,
+];
+
 export const pagesPlugin = createFrontendPlugin({
   pluginId: 'pages',
   info: {
@@ -467,6 +591,7 @@ export const pagesPlugin = createFrontendPlugin({
   routes: {
     page1: page1RouteRef,
     pageX: pageXRouteRef,
+    pluginInfoSummary: pluginInfoSummaryRouteRef,
   },
   externalRoutes: {
     pageX: externalPageXRouteRef,
@@ -477,17 +602,5 @@ export const pagesPlugin = createFrontendPlugin({
     { name: 'beta-access' },
     { name: 'experimental-card' },
   ],
-  extensions: [
-    IndexPage,
-    Page1,
-    ExternalPage,
-    FeatureFlagPage,
-    AllFlagsPage,
-    AnyFlagPage,
-    PermissionCardPage,
-    PublicCard,
-    RestrictedCard,
-    PermissionGatedPage,
-    FeatureFlagCard,
-  ],
+  extensions: pluginExtensions,
 });

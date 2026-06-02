@@ -1,0 +1,280 @@
+diff --git a/packages/app/src/App.tsx b/packages/app/src/App.tsx
+index 1bd2db5b99..1c3fc2cd74 100644
+--- a/packages/app/src/App.tsx
++++ b/packages/app/src/App.tsx
+@@ -23,10 +23,11 @@ import homePlugin from '@backstage/plugin-home/alpha';
+ import { createFrontendModule } from '@backstage/frontend-plugin-api';
+ import {
+   HomePageLayoutBlueprint,
++  HomePageWidgetBlueprint,
+   type HomePageLayoutProps,
+ } from '@backstage/plugin-home-react/alpha';
+ import { Fragment } from 'react';
+-import { Content, Header, Page } from '@backstage/core-components';
++import { Content, Header, Link, Page } from '@backstage/core-components';
+ import {
+   CustomHomepageGrid,
+   WelcomeTitle,
+@@ -79,6 +80,28 @@ const clockConfigs: ClockConfig[] = [
+   { label: 'TYO', timeZone: 'Asia/Tokyo' },
+ ];
+ 
++const homePagePluginInfoSummaryWidget = HomePageWidgetBlueprint.make({
++  name: 'plugin-info-summary-shortcut',
++  params: {
++    title: 'Plugin Info Summary',
++    description: 'Shortcut to the readable plugin metadata debug page',
++    components: async () => ({
++      Content: () => (
++        <div>
++          <p style={{ marginTop: 0 }}>
++            Open the readable debug page for the example pages plugin metadata.
++          </p>
++          <Link to="/plugin-info-summary">Go to Plugin Info Summary</Link>
++        </div>
++      ),
++    }),
++    layout: {
++      width: { defaultColumns: 4, minColumns: 3 },
++      height: { defaultRows: 2, minRows: 2 },
++    },
++  },
++});
++
+ const customHomePageModule = createFrontendModule({
+   pluginId: 'home',
+   extensions: [
+@@ -105,10 +128,10 @@ const customHomePageModule = createFrontendModule({
+           },
+       },
+     }),
++    homePagePluginInfoSummaryWidget,
+   ],
+ });
+ 
+-// customize catalog example
+ const customizedCatalog = catalogPlugin.withOverrides({
+   extensions: [
+     catalogPlugin.getExtension('entity-content:catalog/overview').override({
+diff --git a/packages/app/src/examples/pagesPlugin.tsx b/packages/app/src/examples/pagesPlugin.tsx
+index 3d69dce677..3595fe8f54 100644
+--- a/packages/app/src/examples/pagesPlugin.tsx
++++ b/packages/app/src/examples/pagesPlugin.tsx
+@@ -32,23 +32,108 @@ import { Route, Routes } from 'react-router-dom';
+ 
+ const indexRouteRef = createRouteRef();
+ const page1RouteRef = createRouteRef();
++const pluginInfoSummaryRouteRef = createRouteRef();
+ export const externalPageXRouteRef = createExternalRouteRef({
+   defaultTarget: 'pages.pageX',
+ });
+ export const pageXRouteRef = createRouteRef();
+ 
+-function PluginInfo() {
++function PluginInfoSummary() {
+   const node = useAppNode();
+   const [info, setInfo] = useState<FrontendPluginInfo | undefined>(undefined);
++  const [loadError, setLoadError] = useState<string | undefined>(undefined);
+ 
+   useEffect(() => {
+-    node?.spec.plugin?.info().then(setInfo);
++    let cancelled = false;
++
++    async function loadInfo() {
++      setLoadError(undefined);
++
++      try {
++        const resolvedInfo = await node?.spec.plugin?.info();
++        if (!cancelled) {
++          setInfo(resolvedInfo);
++        }
++      } catch (error: unknown) {
++        if (!cancelled) {
++          setLoadError(
++            error instanceof Error ? error.message : 'Failed to load plugin info',
++          );
++        }
++      }
++    }
++
++    loadInfo();
++
++    return () => {
++      cancelled = true;
++    };
+   }, [node]);
+ 
++  const isLoading = !info && !loadError;
++  const pluginId = node?.spec.plugin?.pluginId ?? 'Unavailable';
++  const summaryItems = [
++    {
++      label: 'Package name',
++      value: info?.packageName ?? (isLoading ? 'Loading…' : 'Unavailable'),
++    },
++    { label: 'Plugin ID', value: pluginId },
++    { label: 'Extension count', value: pluginExtensions.length.toString() },
++    {
++      label: 'exampleFieldDoNotUse',
++      value:
++        info?.exampleFieldDoNotUse ??
++        (isLoading ? 'Loading…' : 'Unavailable'),
++    },
++  ];
++
+   return (
+     <div>
+-      <h3>Plugin Info</h3>
+-      <pre>{JSON.stringify(info, null, 2)}</pre>
++      <h1>Plugin Info Summary</h1>
++      <p>
++        A readable debug view of the resolved plugin metadata for the example
++        pages plugin.
++      </p>
++      <div
++        style={{
++          display: 'grid',
++          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
++          gap: '1rem',
++          marginTop: '1rem',
++        }}
++      >
++        {summaryItems.map(item => (
++          <div
++            key={item.label}
++            style={{
++              border: '1px solid #ccc',
++              borderRadius: '4px',
++              padding: '1rem',
++            }}
++          >
++            <div
++              style={{
++                color: '#555',
++                fontSize: '0.875rem',
++                marginBottom: '0.5rem',
++              }}
++            >
++              {item.label}
++            </div>
++            <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
++              {item.value}
++            </div>
++          </div>
++        ))}
++      </div>
++      {info?.description && (
++        <p style={{ marginTop: '1rem' }}>
++          <strong>Description:</strong> {info.description}
++        </p>
++      )}
++      {loadError && (
++        <p style={{ color: '#b71c1c', marginTop: '1rem' }}>{loadError}</p>
++      )}
+     </div>
+   );
+ }
+@@ -61,6 +146,7 @@ const IndexPage = PageBlueprint.make({
+     loader: async () => {
+       const Component = () => {
+         const page1Link = useRouteRef(page1RouteRef);
++        const pluginInfoSummaryLink = useRouteRef(pluginInfoSummaryRouteRef);
+         return (
+           <div>
+             <h1>Example Pages Plugin</h1>
+@@ -70,6 +156,11 @@ const IndexPage = PageBlueprint.make({
+                 <Link to={page1Link()}>Page 1</Link>
+               </div>
+             )}
++            {pluginInfoSummaryLink && (
++              <div>
++                <Link to={pluginInfoSummaryLink()}>Plugin Info Summary</Link>
++              </div>
++            )}
+             <div>
+               <Link to="/home">Home</Link>
+             </div>
+@@ -129,8 +220,6 @@ const IndexPage = PageBlueprint.make({
+                 <code>beta-access</code> (<code>$any</code>)
+               </li>
+             </ul>
+-
+-            <PluginInfo />
+           </div>
+         );
+       };
+@@ -194,6 +283,26 @@ const ExternalPage = PageBlueprint.make({
+   },
+ });
+ 
++const PluginInfoSummaryPage = PageBlueprint.make({
++  name: 'pluginInfoSummary',
++  params: {
++    path: '/plugin-info-summary',
++    routeRef: pluginInfoSummaryRouteRef,
++    loader: async () => {
++      const Component = () => {
++        const indexLink = useRouteRef(indexRouteRef);
++        return (
++          <div>
++            <PluginInfoSummary />
++            {indexLink && <Link to={indexLink()}>Go back</Link>}
++          </div>
++        );
++      };
++      return <Component />;
++    },
++  },
++});
++
+ // Example: Page enabled only when a single feature flag is active.
+ //
+ // The `if` predicate is evaluated once at app startup (before the router
+@@ -458,6 +567,21 @@ const PermissionGatedPage = PageBlueprint.make({
+   if: { permissions: { $contains: 'catalog.entity.create' } },
+ });
+ 
++const pluginExtensions = [
++  IndexPage,
++  Page1,
++  PluginInfoSummaryPage,
++  ExternalPage,
++  FeatureFlagPage,
++  AllFlagsPage,
++  AnyFlagPage,
++  PermissionCardPage,
++  PublicCard,
++  RestrictedCard,
++  PermissionGatedPage,
++  FeatureFlagCard,
++];
++
+ export const pagesPlugin = createFrontendPlugin({
+   pluginId: 'pages',
+   info: {
+@@ -467,6 +591,7 @@ export const pagesPlugin = createFrontendPlugin({
+   routes: {
+     page1: page1RouteRef,
+     pageX: pageXRouteRef,
++    pluginInfoSummary: pluginInfoSummaryRouteRef,
+   },
+   externalRoutes: {
+     pageX: externalPageXRouteRef,
+@@ -477,17 +602,5 @@ export const pagesPlugin = createFrontendPlugin({
+     { name: 'beta-access' },
+     { name: 'experimental-card' },
+   ],
+-  extensions: [
+-    IndexPage,
+-    Page1,
+-    ExternalPage,
+-    FeatureFlagPage,
+-    AllFlagsPage,
+-    AnyFlagPage,
+-    PermissionCardPage,
+-    PublicCard,
+-    RestrictedCard,
+-    PermissionGatedPage,
+-    FeatureFlagCard,
+-  ],
++  extensions: pluginExtensions,
+ });
