@@ -26,6 +26,8 @@ import {
   createExtensionBlueprint,
   createExtensionInput,
   coreExtensionData,
+  useApi,
+  appTreeApiRef,
 } from '@backstage/frontend-plugin-api';
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
@@ -36,22 +38,73 @@ export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
 export const pageXRouteRef = createRouteRef();
+const pluginInfoSummaryRouteRef = createRouteRef();
 
-function PluginInfo() {
+function PluginInfoSummary() {
   const node = useAppNode();
+  const appTreeApi = useApi(appTreeApiRef);
   const [info, setInfo] = useState<FrontendPluginInfo | undefined>(undefined);
 
   useEffect(() => {
     node?.spec.plugin?.info().then(setInfo);
   }, [node]);
 
+  const pluginId = node?.spec.plugin?.pluginId;
+  const nodes = [...appTreeApi.getTree().tree.nodes.values()];
+  const extensionCount = pluginId
+    ? nodes.filter(n => n.spec.plugin.pluginId === pluginId).length
+    : 0;
+
   return (
     <div>
-      <h3>Plugin Info</h3>
-      <pre>{JSON.stringify(info, null, 2)}</pre>
+      <h3>Plugin Info Summary</h3>
+      <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: '600px' }}>
+        <tbody>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ccc' }}>Package Name</th>
+            <td style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>{info?.packageName ?? 'N/A'}</td>
+          </tr>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ccc' }}>Plugin ID</th>
+            <td style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>{pluginId ?? 'N/A'}</td>
+          </tr>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ccc' }}>Extension Count</th>
+            <td style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>{extensionCount}</td>
+          </tr>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ccc' }}>exampleFieldDoNotUse</th>
+            <td style={{ padding: '8px', borderBottom: '1px solid #ccc' }}>{info?.exampleFieldDoNotUse ?? 'N/A'}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
+
+const PluginInfoSummaryPage = PageBlueprint.make({
+  name: 'pluginInfoSummary',
+  params: {
+    path: '/plugin-info-summary',
+    routeRef: pluginInfoSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const indexLink = useRouteRef(indexRouteRef);
+        return (
+          <div>
+            <PluginInfoSummary />
+            {indexLink && (
+              <div style={{ marginTop: '16px' }}>
+                <Link to={indexLink()}>Go back</Link>
+              </div>
+            )}
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
 
 const IndexPage = PageBlueprint.make({
   name: 'index',
@@ -81,6 +134,10 @@ const IndexPage = PageBlueprint.make({
             </div>
             <div>
               <Link to="/settings">Settings</Link>
+            </div>
+
+            <div>
+              <Link to="/plugin-info-summary">Plugin Info Summary</Link>
             </div>
 
             <h2>Permission Enablement Examples</h2>
@@ -129,8 +186,6 @@ const IndexPage = PageBlueprint.make({
                 <code>beta-access</code> (<code>$any</code>)
               </li>
             </ul>
-
-            <PluginInfo />
           </div>
         );
       };
@@ -467,6 +522,7 @@ export const pagesPlugin = createFrontendPlugin({
   routes: {
     page1: page1RouteRef,
     pageX: pageXRouteRef,
+    pluginInfoSummary: pluginInfoSummaryRouteRef,
   },
   externalRoutes: {
     pageX: externalPageXRouteRef,
@@ -479,6 +535,7 @@ export const pagesPlugin = createFrontendPlugin({
   ],
   extensions: [
     IndexPage,
+    PluginInfoSummaryPage,
     Page1,
     ExternalPage,
     FeatureFlagPage,
