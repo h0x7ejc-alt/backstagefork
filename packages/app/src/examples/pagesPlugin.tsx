@@ -32,6 +32,7 @@ import { Route, Routes } from 'react-router-dom';
 
 const indexRouteRef = createRouteRef();
 const page1RouteRef = createRouteRef();
+const featureFlagSummaryRouteRef = createRouteRef();
 export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
@@ -61,6 +62,7 @@ const IndexPage = PageBlueprint.make({
     loader: async () => {
       const Component = () => {
         const page1Link = useRouteRef(page1RouteRef);
+        const featureFlagSummaryLink = useRouteRef(featureFlagSummaryRouteRef);
         return (
           <div>
             <h1>Example Pages Plugin</h1>
@@ -68,6 +70,13 @@ const IndexPage = PageBlueprint.make({
             {page1Link && (
               <div>
                 <Link to={page1Link()}>Page 1</Link>
+              </div>
+            )}
+            {featureFlagSummaryLink && (
+              <div>
+                <Link to={featureFlagSummaryLink()}>
+                  Feature Flag Summary
+                </Link>
               </div>
             )}
             <div>
@@ -458,6 +467,100 @@ const PermissionGatedPage = PageBlueprint.make({
   if: { permissions: { $contains: 'catalog.entity.create' } },
 });
 
+// Feature Flag Summary page that's always accessible, showing all feature flag
+// pages and their required flag conditions.
+const FeatureFlagSummaryPage = PageBlueprint.make({
+  name: 'featureFlagSummary',
+  params: {
+    path: '/feature-flag-summary',
+    routeRef: featureFlagSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const indexLink = useRouteRef(indexRouteRef);
+        return (
+          <div>
+            <h1>Feature Flag Summary</h1>
+            <p>
+              This page shows all feature flag controlled pages and their required conditions.
+              Toggle flags in <Link to="/settings">Settings</Link>, then check the pages.
+            </p>
+            <h2>Feature Flag Pages</h2>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '1rem',
+                marginTop: '1rem',
+              }}
+            >
+              <div
+                style={{
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>
+                  <Link to="/feature-flag-example">Feature Flag Example</Link>
+                </h3>
+                <p>
+                  <strong>Required:</strong> Single flag
+                </p>
+                <code>
+                  {'{ featureFlags: { $contains: "experimental-features" } }'}
+                </code>
+              </div>
+              <div
+                style={{
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>
+                  <Link to="/all-flags-example">All Flags Example</Link>
+                </h3>
+                <p>
+                  <strong>Required:</strong> Multiple flags (all)
+                </p>
+                <code>
+                  {'{ $all: [ { featureFlags: { $contains: "experimental-features" } }, { featureFlags: { $contains: "advanced-features" } } ] }'}
+                </code>
+              </div>
+              <div
+                style={{
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>
+                  <Link to="/any-flag-example">Any Flag Example</Link>
+                </h3>
+                <p>
+                  <strong>Required:</strong> Multiple flags (any)
+                </p>
+                <code>
+                  {'{ $any: [ { featureFlags: { $contains: "experimental-features" } }, { featureFlags: { $contains: "beta-access" } } ] }'}
+                </code>
+              </div>
+            </div>
+            <h2 style={{ marginTop: '2rem' }}>All Feature Flags</h2>
+            <ul>
+              <li><code>experimental-features</code></li>
+              <li><code>advanced-features</code></li>
+              <li><code>beta-access</code></li>
+              <li><code>experimental-card</code></li>
+            </ul>
+            {indexLink && <Link to={indexLink()}>Go back</Link>}
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
+
 export const pagesPlugin = createFrontendPlugin({
   pluginId: 'pages',
   info: {
@@ -467,6 +570,7 @@ export const pagesPlugin = createFrontendPlugin({
   routes: {
     page1: page1RouteRef,
     pageX: pageXRouteRef,
+    featureFlagSummary: featureFlagSummaryRouteRef,
   },
   externalRoutes: {
     pageX: externalPageXRouteRef,
@@ -489,5 +593,6 @@ export const pagesPlugin = createFrontendPlugin({
     RestrictedCard,
     PermissionGatedPage,
     FeatureFlagCard,
+    FeatureFlagSummaryPage,
   ],
 });
