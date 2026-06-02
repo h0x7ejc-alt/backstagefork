@@ -1,0 +1,188 @@
+diff --git a/packages/app/src/examples/pagesPlugin.tsx b/packages/app/src/examples/pagesPlugin.tsx
+index 3d69dce677..9e2a6adace 100644
+--- a/packages/app/src/examples/pagesPlugin.tsx
++++ b/packages/app/src/examples/pagesPlugin.tsx
+@@ -113,6 +113,15 @@ const IndexPage = PageBlueprint.make({
+               relevant feature flags in <Link to="/settings">Settings</Link>,
+               then refresh the app to see the pages appear.
+             </p>
++            <p>
++              <strong>
++                <Link to="/feature-flag-summary">
++                  Feature Flag Summary
++                </Link>
++              </strong>{' '}
++              — an always-accessible reference page that lists every
++              flag-gated extension and the flags it depends on.
++            </p>
+             <ul>
+               <li>
+                 <Link to="/feature-flag-example">Feature Flag Example</Link> —
+@@ -314,6 +323,159 @@ const AnyFlagPage = PageBlueprint.make({
+   },
+ });
+ 
++// Summary page that lists all feature-flag-gated extensions and their
++// conditions. This page is always accessible — no predicate — so it
++// serves as a quick reference when toggling flags in Settings.
++const FeatureFlagSummaryPage = PageBlueprint.make({
++  name: 'featureFlagSummary',
++  params: {
++    path: '/feature-flag-summary',
++    loader: async () => {
++      const Component = () => {
++        const indexLink = useRouteRef(indexRouteRef);
++        return (
++          <div>
++            <h1>Feature Flag Summary</h1>
++            <p>
++              This page lists every feature-flag-gated extension in this
++              example plugin together with the flags it depends on. The page
++              itself is <strong>always accessible</strong> so you can use it as
++              a reference while toggling flags in{' '}
++              <Link to="/settings">Settings</Link>.
++            </p>
++
++            <h2>Registered Feature Flags</h2>
++            <p>
++              The following flags are declared by this plugin and can be toggled
++              in the Settings page:
++            </p>
++            <ul>
++              <li>
++                <code>experimental-features</code>
++              </li>
++              <li>
++                <code>advanced-features</code>
++              </li>
++              <li>
++                <code>beta-access</code>
++              </li>
++              <li>
++                <code>experimental-card</code>
++              </li>
++            </ul>
++
++            <h2>Flag-Gated Pages</h2>
++            <table
++              style={{
++                width: '100%',
++                borderCollapse: 'collapse',
++                marginBottom: '2rem',
++              }}
++            >
++              <thead>
++                <tr style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>
++                  <th style={{ padding: '8px' }}>Page</th>
++                  <th style={{ padding: '8px' }}>Route</th>
++                  <th style={{ padding: '8px' }}>Predicate</th>
++                  <th style={{ padding: '8px' }}>Required Flags</th>
++                </tr>
++              </thead>
++              <tbody>
++                <tr style={{ borderBottom: '1px solid #eee' }}>
++                  <td style={{ padding: '8px' }}>
++                    <Link to="/feature-flag-example">
++                      Feature Flag Example
++                    </Link>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>/feature-flag-example</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>$contains</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>experimental-features</code>
++                  </td>
++                </tr>
++                <tr style={{ borderBottom: '1px solid #eee' }}>
++                  <td style={{ padding: '8px' }}>
++                    <Link to="/all-flags-example">All Flags Example</Link>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>/all-flags-example</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>$all</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>experimental-features</code> +{' '}
++                    <code>advanced-features</code>
++                  </td>
++                </tr>
++                <tr style={{ borderBottom: '1px solid #eee' }}>
++                  <td style={{ padding: '8px' }}>
++                    <Link to="/any-flag-example">Any Flag Example</Link>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>/any-flag-example</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>$any</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>experimental-features</code> or{' '}
++                    <code>beta-access</code>
++                  </td>
++                </tr>
++              </tbody>
++            </table>
++
++            <h2>Flag-Gated Cards</h2>
++            <table
++              style={{
++                width: '100%',
++                borderCollapse: 'collapse',
++              }}
++            >
++              <thead>
++                <tr style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>
++                  <th style={{ padding: '8px' }}>Card</th>
++                  <th style={{ padding: '8px' }}>Attached To</th>
++                  <th style={{ padding: '8px' }}>Predicate</th>
++                  <th style={{ padding: '8px' }}>Required Flag</th>
++                </tr>
++              </thead>
++              <tbody>
++                <tr style={{ borderBottom: '1px solid #eee' }}>
++                  <td style={{ padding: '8px' }}>Feature Flagged Card</td>
++                  <td style={{ padding: '8px' }}>
++                    <Link to="/permission-card-example">
++                      Permission Card Example
++                    </Link>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>$contains</code>
++                  </td>
++                  <td style={{ padding: '8px' }}>
++                    <code>experimental-card</code>
++                  </td>
++                </tr>
++              </tbody>
++            </table>
++
++            {indexLink && (
++              <div style={{ marginTop: '2rem' }}>
++                <Link to={indexLink()}>Go back</Link>
++              </div>
++            )}
++          </div>
++        );
++      };
++      return <Component />;
++    },
++  },
++});
++
+ // Blueprint for cards that attach to the PermissionCardPage below.
+ //
+ // Each card receives a title and description and renders a simple bordered card.
+@@ -484,6 +646,7 @@ export const pagesPlugin = createFrontendPlugin({
+     FeatureFlagPage,
+     AllFlagsPage,
+     AnyFlagPage,
++    FeatureFlagSummaryPage,
+     PermissionCardPage,
+     PublicCard,
+     RestrictedCard,
