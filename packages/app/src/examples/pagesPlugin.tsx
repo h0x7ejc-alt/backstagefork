@@ -26,29 +26,109 @@ import {
   createExtensionBlueprint,
   createExtensionInput,
   coreExtensionData,
+  appTreeApiRef,
+  useApi,
 } from '@backstage/frontend-plugin-api';
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 const indexRouteRef = createRouteRef();
 const page1RouteRef = createRouteRef();
+const pluginInfoSummaryRouteRef = createRouteRef();
 export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
 export const pageXRouteRef = createRouteRef();
 
-function PluginInfo() {
+function PluginInfoSummary() {
   const node = useAppNode();
   const [info, setInfo] = useState<FrontendPluginInfo | undefined>(undefined);
+  const appTreeApi = useApi(appTreeApiRef);
 
   useEffect(() => {
     node?.spec.plugin?.info().then(setInfo);
   }, [node]);
 
+  const pluginId = node?.spec.plugin?.pluginId;
+  const extensionCount = (() => {
+    if (!pluginId) return 0;
+    const { tree } = appTreeApi.getTree();
+    let count = 0;
+    for (const n of tree.nodes.values()) {
+      if (n.spec.plugin?.pluginId === pluginId) {
+        count++;
+      }
+    }
+    return count;
+  })();
+
+  const labelStyle: React.CSSProperties = {
+    fontWeight: 600,
+    color: '#555',
+    minWidth: 200,
+    display: 'inline-block',
+  };
+  const rowStyle: React.CSSProperties = {
+    padding: '8px 0',
+    borderBottom: '1px solid #eee',
+  };
+
   return (
-    <div>
-      <h3>Plugin Info</h3>
-      <pre>{JSON.stringify(info, null, 2)}</pre>
+    <div style={{ maxWidth: 720 }}>
+      <h3>Plugin Info Summary</h3>
+      <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 16 }}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Package Name</span>
+          <span>{info?.packageName ?? '—'}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Plugin ID</span>
+          <span>{pluginId ?? '—'}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Extension Count</span>
+          <span>{extensionCount}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Version</span>
+          <span>{info?.version ?? '—'}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Description</span>
+          <span>{info?.description ?? '—'}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>Owner Entity Refs</span>
+          <span>{info?.ownerEntityRefs?.join(', ') ?? '—'}</span>
+        </div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>exampleFieldDoNotUse</span>
+          <span>{info?.exampleFieldDoNotUse ?? '—'}</span>
+        </div>
+        {info?.links && info.links.length > 0 && (
+          <div style={rowStyle}>
+            <span style={labelStyle}>Links</span>
+            <span>
+              {info.links.map((link, i) => (
+                <span key={i}>
+                  {i > 0 && ', '}
+                  <a href={link.url} target="_blank" rel="noopener">
+                    {link.title}
+                  </a>
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
+      </div>
+      <details style={{ marginTop: 16 }}>
+        <summary style={{ cursor: 'pointer', color: '#666' }}>
+          Raw JSON
+        </summary>
+        <pre style={{ fontSize: 12, overflowX: 'auto' }}>
+          {JSON.stringify(info, null, 2)}
+        </pre>
+      </details>
     </div>
   );
 }
@@ -81,6 +161,9 @@ const IndexPage = PageBlueprint.make({
             </div>
             <div>
               <Link to="/settings">Settings</Link>
+            </div>
+            <div>
+              <Link to="/plugin-info-summary">Plugin Info Summary</Link>
             </div>
 
             <h2>Permission Enablement Examples</h2>
@@ -130,7 +213,7 @@ const IndexPage = PageBlueprint.make({
               </li>
             </ul>
 
-            <PluginInfo />
+            <PluginInfoSummary />
           </div>
         );
       };
@@ -186,6 +269,32 @@ const ExternalPage = PageBlueprint.make({
           <div>
             <h1>This is page X</h1>
             {indexLink && <Link to={indexLink()}>Go back</Link>}
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
+
+const PluginInfoSummaryPage = PageBlueprint.make({
+  name: 'pluginInfoSummary',
+  params: {
+    path: '/plugin-info-summary',
+    routeRef: pluginInfoSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const indexLink = useRouteRef(indexRouteRef);
+
+        return (
+          <div>
+            <h1>Plugin Info Summary</h1>
+            <PluginInfoSummary />
+            {indexLink && (
+              <div style={{ marginTop: 16 }}>
+                <Link to={indexLink()}>Go back</Link>
+              </div>
+            )}
           </div>
         );
       };
@@ -481,6 +590,7 @@ export const pagesPlugin = createFrontendPlugin({
     IndexPage,
     Page1,
     ExternalPage,
+    PluginInfoSummaryPage,
     FeatureFlagPage,
     AllFlagsPage,
     AnyFlagPage,
