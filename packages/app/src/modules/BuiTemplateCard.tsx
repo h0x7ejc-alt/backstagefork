@@ -35,7 +35,7 @@ import {
 import type { TemplateCardComponentProps } from '@backstage/plugin-scaffolder-react/alpha';
 import styles from './BuiTemplateCard.module.css';
 
-const MAX_TAGS = 4;
+const MAX_VISIBLE_NON_TYPE_TAGS = 2;
 
 export function BuiTemplateCard(props: TemplateCardComponentProps) {
   const { template, onSelected } = props;
@@ -46,14 +46,25 @@ export function BuiTemplateCard(props: TemplateCardComponentProps) {
     metadata: { tags, description, name, title },
   } = template;
 
-  const visibleTags = useMemo(
-    () =>
-      Array.from(new Set([type, ...(tags ?? [])].filter(Boolean))).slice(
-        0,
-        MAX_TAGS,
-      ),
-    [type, tags],
-  );
+  const { visibleTags, remainingTagCount } = useMemo(() => {
+    const normalizedTags = (tags ?? []).reduce<string[]>(
+      (accumulator: string[], tag: string) => {
+        if (tag && accumulator.indexOf(tag) === -1) {
+          accumulator.push(tag);
+        }
+
+        return accumulator;
+      },
+      [],
+    );
+    const nonTypeTags = normalizedTags.filter((tag: string) => tag !== type);
+    const visibleNonTypeTags = nonTypeTags.slice(0, MAX_VISIBLE_NON_TYPE_TAGS);
+
+    return {
+      visibleTags: [...(type ? [type] : []), ...visibleNonTypeTags],
+      remainingTagCount: nonTypeTags.length - visibleNonTypeTags.length,
+    };
+  }, [type, tags]);
 
   const owner = getEntityRelations(template, RELATION_OWNED_BY)[0];
 
@@ -88,9 +99,10 @@ export function BuiTemplateCard(props: TemplateCardComponentProps) {
         )}
         {visibleTags.length > 0 && (
           <TagGroup>
-            {visibleTags.map(t => (
-              <Tag key={t}>{t!}</Tag>
+            {visibleTags.map(tag => (
+              <Tag key={tag}>{tag}</Tag>
             ))}
+            {remainingTagCount > 0 && <Tag>+{remainingTagCount} more</Tag>}
           </TagGroup>
         )}
       </Box>
