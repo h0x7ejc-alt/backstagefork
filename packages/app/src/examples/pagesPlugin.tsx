@@ -26,16 +26,58 @@ import {
   createExtensionBlueprint,
   createExtensionInput,
   coreExtensionData,
+  useApi,
+  featureFlagsApiRef,
 } from '@backstage/frontend-plugin-api';
+import { HomePageWidgetBlueprint } from '@backstage/plugin-home-react/alpha';
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 const indexRouteRef = createRouteRef();
 const page1RouteRef = createRouteRef();
+const featureFlagSummaryRouteRef = createRouteRef();
 export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
 export const pageXRouteRef = createRouteRef();
+
+const featureFlagPages = [
+  {
+    title: 'Feature Flag Example',
+    path: '/feature-flag-example',
+    flags: ['experimental-features'],
+    condition: 'experimental-features',
+    predicate: '{ featureFlags: { $contains: "experimental-features" } }',
+    matches: (isActive: (flag: string) => boolean) =>
+      isActive('experimental-features'),
+  },
+  {
+    title: 'All Flags Example',
+    path: '/all-flags-example',
+    flags: ['experimental-features', 'advanced-features'],
+    condition: 'experimental-features AND advanced-features',
+    predicate:
+      '{ $all: [{ featureFlags: { $contains: "experimental-features" } }, { featureFlags: { $contains: "advanced-features" } }] }',
+    matches: (isActive: (flag: string) => boolean) =>
+      isActive('experimental-features') && isActive('advanced-features'),
+  },
+  {
+    title: 'Any Flag Example',
+    path: '/any-flag-example',
+    flags: ['experimental-features', 'beta-access'],
+    condition: 'experimental-features OR beta-access',
+    predicate:
+      '{ $any: [{ featureFlags: { $contains: "experimental-features" } }, { featureFlags: { $contains: "beta-access" } }] }',
+    matches: (isActive: (flag: string) => boolean) =>
+      isActive('experimental-features') || isActive('beta-access'),
+  },
+] as const;
+
+const summaryFlags = [
+  'experimental-features',
+  'advanced-features',
+  'beta-access',
+] as const;
 
 function PluginInfo() {
   const node = useAppNode();
@@ -61,6 +103,7 @@ const IndexPage = PageBlueprint.make({
     loader: async () => {
       const Component = () => {
         const page1Link = useRouteRef(page1RouteRef);
+        const featureFlagSummaryLink = useRouteRef(featureFlagSummaryRouteRef);
         return (
           <div>
             <h1>Example Pages Plugin</h1>
@@ -68,6 +111,11 @@ const IndexPage = PageBlueprint.make({
             {page1Link && (
               <div>
                 <Link to={page1Link()}>Page 1</Link>
+              </div>
+            )}
+            {featureFlagSummaryLink && (
+              <div>
+                <Link to={featureFlagSummaryLink()}>Feature Flag Summary</Link>
               </div>
             )}
             <div>
@@ -114,6 +162,13 @@ const IndexPage = PageBlueprint.make({
               then refresh the app to see the pages appear.
             </p>
             <ul>
+              {featureFlagSummaryLink && (
+                <li>
+                  <Link to={featureFlagSummaryLink()}>Feature Flag Summary</Link>{' '}
+                  — always available, with a live summary of the example page
+                  conditions
+                </li>
+              )}
               <li>
                 <Link to="/feature-flag-example">Feature Flag Example</Link> —
                 requires the <code>experimental-features</code> flag
@@ -190,6 +245,154 @@ const ExternalPage = PageBlueprint.make({
         );
       };
       return <Component />;
+    },
+  },
+});
+
+const FeatureFlagSummaryPage = PageBlueprint.make({
+  name: 'featureFlagSummary',
+  params: {
+    path: '/feature-flag-summary',
+    routeRef: featureFlagSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const featureFlagsApi = useApi(featureFlagsApiRef);
+        const indexLink = useRouteRef(indexRouteRef);
+
+        return (
+          <div>
+            <h1>Feature Flag Summary</h1>
+            <p>
+              This page is always available so you can compare the current
+              feature flag settings with the example routes before and after a
+              refresh.
+            </p>
+            <p>
+              Update flags in <Link to="/settings">Settings</Link>, then
+              refresh the app to rebuild the router tree for gated pages.
+            </p>
+
+            <h2>Current Flag State</h2>
+            <ul>
+              {summaryFlags.map(flag => {
+                const isActive = featureFlagsApi.isActive(flag);
+
+                return (
+                  <li key={flag}>
+                    <code>{flag}</code> — {isActive ? 'enabled' : 'disabled'}
+                  </li>
+                );
+              })}
+            </ul>
+
+            <h2>Feature Flag Pages</h2>
+            <table
+              style={{ borderCollapse: 'collapse', width: '100%' }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    align="left"
+                    style={{ borderBottom: '1px solid #ccc', padding: '0.5rem' }}
+                  >
+                    Page
+                  </th>
+                  <th
+                    align="left"
+                    style={{ borderBottom: '1px solid #ccc', padding: '0.5rem' }}
+                  >
+                    Route condition
+                  </th>
+                  <th
+                    align="left"
+                    style={{ borderBottom: '1px solid #ccc', padding: '0.5rem' }}
+                  >
+                    Predicate
+                  </th>
+                  <th
+                    align="left"
+                    style={{ borderBottom: '1px solid #ccc', padding: '0.5rem' }}
+                  >
+                    Current result
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {featureFlagPages.map(page => {
+                  const isAvailable = page.matches((flag: string) =>
+                    featureFlagsApi.isActive(flag),
+                  );
+
+                  return (
+                    <tr key={page.path}>
+                      <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>
+                        {isAvailable ? (
+                          <Link to={page.path}>{page.title}</Link>
+                        ) : (
+                          page.title
+                        )}
+                      </td>
+                      <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>
+                        <div>{page.condition}</div>
+                        <div>
+                          Flags:{' '}
+                          {page.flags.map((flag: string) => (
+                            <code key={flag} style={{ marginRight: '0.5rem' }}>
+                              {flag}
+                            </code>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>
+                        <code>{page.predicate}</code>
+                      </td>
+                      <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>
+                        {isAvailable
+                          ? 'Route should be available after refresh'
+                          : 'Route should be absent until the required flags are enabled and the app is refreshed'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {indexLink && <Link to={indexLink()}>Go back</Link>}
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
+
+const FeatureFlagSummaryWidget = HomePageWidgetBlueprint.make({
+  name: 'feature-flag-summary',
+  params: {
+    name: 'FeatureFlagSummary',
+    title: 'Feature Flag Summary',
+    description:
+      'Quick access to the always-available feature flag overview page.',
+    components: async () => ({
+      Content: function FeatureFlagSummaryWidgetContent() {
+        const featureFlagSummaryLink = useRouteRef(featureFlagSummaryRouteRef);
+
+        return (
+          <div>
+            <p>
+              Open the always-available summary page to compare the current
+              feature flag settings with the example routes.
+            </p>
+            {featureFlagSummaryLink && (
+              <Link to={featureFlagSummaryLink()}>Open Feature Flag Summary</Link>
+            )}
+          </div>
+        );
+      },
+    }),
+    layout: {
+      width: { minColumns: 3 },
+      height: { minRows: 2 },
     },
   },
 });
@@ -467,6 +670,7 @@ export const pagesPlugin = createFrontendPlugin({
   routes: {
     page1: page1RouteRef,
     pageX: pageXRouteRef,
+    featureFlagSummary: featureFlagSummaryRouteRef,
   },
   externalRoutes: {
     pageX: externalPageXRouteRef,
@@ -481,6 +685,8 @@ export const pagesPlugin = createFrontendPlugin({
     IndexPage,
     Page1,
     ExternalPage,
+    FeatureFlagSummaryPage,
+    FeatureFlagSummaryWidget,
     FeatureFlagPage,
     AllFlagsPage,
     AnyFlagPage,
