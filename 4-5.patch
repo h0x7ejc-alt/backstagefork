@@ -1,0 +1,221 @@
+diff --git a/packages/app/src/examples/pagesPlugin.tsx b/packages/app/src/examples/pagesPlugin.tsx
+index 3d69dce677..24a0f8c85b 100644
+--- a/packages/app/src/examples/pagesPlugin.tsx
++++ b/packages/app/src/examples/pagesPlugin.tsx
+@@ -114,6 +114,10 @@ const IndexPage = PageBlueprint.make({
+               then refresh the app to see the pages appear.
+             </p>
+             <ul>
++              <li>
++                <Link to="/feature-flag-summary">Feature Flag Summary</Link> —
++                overview of all feature flag pages and their conditions
++              </li>
+               <li>
+                 <Link to="/feature-flag-example">Feature Flag Example</Link> —
+                 requires the <code>experimental-features</code> flag
+@@ -314,6 +318,197 @@ const AnyFlagPage = PageBlueprint.make({
+   },
+ });
+ 
++const FeatureFlagSummaryPage = PageBlueprint.make({
++  name: 'featureFlagSummary',
++  params: {
++    path: '/feature-flag-summary',
++    loader: async () => {
++      const Component = () => {
++        const indexLink = useRouteRef(indexRouteRef);
++        return (
++          <div>
++            <h1>Feature Flag Summary</h1>
++            <p>
++              This page provides an overview of all feature flag-gated pages in
++              this plugin. Use the links below to navigate to each page and
++              verify their visibility after toggling flags in{' '}
++              <Link to="/settings">Settings</Link>.
++            </p>
++
++            <h2>Feature Flags Defined</h2>
++            <ul>
++              <li>
++                <code>experimental-features</code>
++              </li>
++              <li>
++                <code>advanced-features</code>
++              </li>
++              <li>
++                <code>beta-access</code>
++              </li>
++              <li>
++                <code>experimental-card</code> — used for the Feature Flagged
++                Card on the Permission Card Example page
++              </li>
++            </ul>
++
++            <h2>Feature Flag-Gated Pages</h2>
++            <table
++              style={{
++                borderCollapse: 'collapse',
++                width: '100%',
++                marginTop: '1rem',
++              }}
++            >
++              <thead>
++                <tr>
++                  <th
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                      textAlign: 'left',
++                    }}
++                  >
++                    Page
++                  </th>
++                  <th
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                      textAlign: 'left',
++                    }}
++                  >
++                    Required Flags
++                  </th>
++                  <th
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                      textAlign: 'left',
++                    }}
++                  >
++                    Logic
++                  </th>
++                </tr>
++              </thead>
++              <tbody>
++                <tr>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <Link to="/feature-flag-example">Feature Flag Example</Link>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <code>experimental-features</code>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    Single flag (<code>$contains</code>)
++                  </td>
++                </tr>
++                <tr>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <Link to="/all-flags-example">All Flags Example</Link>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <code>experimental-features</code> AND{' '}
++                    <code>advanced-features</code>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    All flags required (<code>$all</code>)
++                  </td>
++                </tr>
++                <tr>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <Link to="/any-flag-example">Any Flag Example</Link>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    <code>experimental-features</code> OR{' '}
++                    <code>beta-access</code>
++                  </td>
++                  <td
++                    style={{
++                      border: '1px solid #ccc',
++                      padding: '0.5rem',
++                    }}
++                  >
++                    Any flag sufficient (<code>$any</code>)
++                  </td>
++                </tr>
++              </tbody>
++            </table>
++
++            <h2>Feature Flag-Gated Cards</h2>
++            <p>
++              The <Link to="/permission-card-example">Permission Card Example</Link>{' '}
++              page also contains a card gated by feature flags:
++            </p>
++            <ul>
++              <li>
++                <strong>Feature Flagged Card</strong> — visible only with{' '}
++                <code>experimental-card</code> flag active
++              </li>
++            </ul>
++
++            <h2>Testing Tips</h2>
++            <ol>
++              <li>
++                Navigate to <Link to="/settings">Settings</Link> to toggle
++                feature flags
++              </li>
++              <li>Refresh the app after changing flags</li>
++              <li>
++                Return here and click the page links to verify which pages are
++                visible
++              </li>
++            </ol>
++
++            {indexLink && <Link to={indexLink()}>Go back</Link>}
++          </div>
++        );
++      };
++      return <Component />;
++    },
++  },
++});
++
+ // Blueprint for cards that attach to the PermissionCardPage below.
+ //
+ // Each card receives a title and description and renders a simple bordered card.
+@@ -481,6 +676,7 @@ export const pagesPlugin = createFrontendPlugin({
+     IndexPage,
+     Page1,
+     ExternalPage,
++    FeatureFlagSummaryPage,
+     FeatureFlagPage,
+     AllFlagsPage,
+     AnyFlagPage,
