@@ -32,10 +32,102 @@ import { Route, Routes } from 'react-router-dom';
 
 const indexRouteRef = createRouteRef();
 const page1RouteRef = createRouteRef();
+const pluginInfoSummaryRouteRef = createRouteRef();
 export const externalPageXRouteRef = createExternalRouteRef({
   defaultTarget: 'pages.pageX',
 });
 export const pageXRouteRef = createRouteRef();
+
+function PluginInfoSummary() {
+  const node = useAppNode();
+  const [info, setInfo] = useState<FrontendPluginInfo | undefined>(undefined);
+
+  useEffect(() => {
+    node?.spec.plugin?.info().then(setInfo);
+  }, [node]);
+
+  return (
+    <div>
+      <h1>Plugin Info Summary</h1>
+      {info ? (
+        <div style={{ maxWidth: '800px' }}>
+          <h2>Overview</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1.5rem',
+              marginBottom: '2rem',
+            }}
+          >
+            <div
+              style={{
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                padding: '1rem',
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                Package Name
+              </h3>
+              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+                {info.packageJson?.name || 'N/A'}
+              </p>
+            </div>
+            <div
+              style={{
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                padding: '1rem',
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                Plugin ID
+              </h3>
+              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+                {node?.spec.plugin?.id || 'N/A'}
+              </p>
+            </div>
+            <div
+              style={{
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                padding: '1rem',
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                Extension Count
+              </h3>
+              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+                {node?.spec.extensions?.length || 0}
+              </p>
+            </div>
+            <div
+              style={{
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                padding: '1rem',
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                Example Field
+              </h3>
+              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0 }}>
+                {info.exampleFieldDoNotUse || 'N/A'}
+              </p>
+            </div>
+          </div>
+          <h2>Raw JSON</h2>
+          <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '6px', overflow: 'auto' }}>
+            {JSON.stringify(info, null, 2)}
+          </pre>
+        </div>
+      ) : (
+        <p>Loading plugin info...</p>
+      )}
+    </div>
+  );
+}
 
 function PluginInfo() {
   const node = useAppNode();
@@ -61,6 +153,7 @@ const IndexPage = PageBlueprint.make({
     loader: async () => {
       const Component = () => {
         const page1Link = useRouteRef(page1RouteRef);
+        const pluginInfoSummaryLink = useRouteRef(pluginInfoSummaryRouteRef);
         return (
           <div>
             <h1>Example Pages Plugin</h1>
@@ -68,6 +161,11 @@ const IndexPage = PageBlueprint.make({
             {page1Link && (
               <div>
                 <Link to={page1Link()}>Page 1</Link>
+              </div>
+            )}
+            {pluginInfoSummaryLink && (
+              <div>
+                <Link to={pluginInfoSummaryLink()}>Plugin Info Summary</Link>
               </div>
             )}
             <div>
@@ -131,6 +229,26 @@ const IndexPage = PageBlueprint.make({
             </ul>
 
             <PluginInfo />
+          </div>
+        );
+      };
+      return <Component />;
+    },
+  },
+});
+
+const PluginInfoSummaryPage = PageBlueprint.make({
+  name: 'pluginInfoSummary',
+  params: {
+    path: '/plugin-info-summary',
+    routeRef: pluginInfoSummaryRouteRef,
+    loader: async () => {
+      const Component = () => {
+        const indexLink = useRouteRef(indexRouteRef);
+        return (
+          <div>
+            <PluginInfoSummary />
+            {indexLink && <Link to={indexLink()}>Go back</Link>}
           </div>
         );
       };
@@ -489,5 +607,6 @@ export const pagesPlugin = createFrontendPlugin({
     RestrictedCard,
     PermissionGatedPage,
     FeatureFlagCard,
+    PluginInfoSummaryPage,
   ],
 });
