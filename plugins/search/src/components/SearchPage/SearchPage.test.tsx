@@ -90,6 +90,33 @@ describe('SearchPage', () => {
     expect(getByText('Route Children')).toBeInTheDocument();
   });
 
+  it('resets search state when navigating from url with params back to empty url', async () => {
+    (useLocation as jest.Mock)
+      .mockReturnValueOnce({
+        search: '?query=bieber&filters[kind]=Component&pageCursor=SOMEPAGE&types[]=software-catalog',
+      })
+      .mockReturnValue({ search: '' });
+
+    const { rerender } = await renderInTestApp(<SearchPage />);
+
+    expect(setTermMock).toHaveBeenCalledWith('bieber');
+    expect(setFiltersMock).toHaveBeenCalledWith({ kind: 'Component' });
+    expect(setPageCursorMock).toHaveBeenCalledWith('SOMEPAGE');
+    expect(setTypesMock).toHaveBeenCalledWith(['software-catalog']);
+
+    setTermMock.mockClear();
+    setFiltersMock.mockClear();
+    setPageCursorMock.mockClear();
+    setTypesMock.mockClear();
+
+    await rerender(<SearchPage />);
+
+    expect(setTermMock).toHaveBeenCalledWith('');
+    expect(setFiltersMock).toHaveBeenCalledWith({});
+    expect(setPageCursorMock).toHaveBeenCalledWith('');
+    expect(setTypesMock).toHaveBeenCalledWith([]);
+  });
+
   it('replaces window history with expected query parameters', async () => {
     (useSearch as jest.Mock).mockReturnValueOnce({
       term: 'bieber',

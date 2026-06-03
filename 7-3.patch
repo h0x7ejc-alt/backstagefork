@@ -1,0 +1,64 @@
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.test.tsx b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+index 130b9f04e6..5a9f8255ba 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.test.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+@@ -90,6 +90,33 @@ describe('SearchPage', () => {
+     expect(getByText('Route Children')).toBeInTheDocument();
+   });
+ 
++  it('resets search state when navigating from url with params back to empty url', async () => {
++    (useLocation as jest.Mock)
++      .mockReturnValueOnce({
++        search: '?query=bieber&filters[kind]=Component&pageCursor=SOMEPAGE&types[]=software-catalog',
++      })
++      .mockReturnValue({ search: '' });
++
++    const { rerender } = await renderInTestApp(<SearchPage />);
++
++    expect(setTermMock).toHaveBeenCalledWith('bieber');
++    expect(setFiltersMock).toHaveBeenCalledWith({ kind: 'Component' });
++    expect(setPageCursorMock).toHaveBeenCalledWith('SOMEPAGE');
++    expect(setTypesMock).toHaveBeenCalledWith(['software-catalog']);
++
++    setTermMock.mockClear();
++    setFiltersMock.mockClear();
++    setPageCursorMock.mockClear();
++    setTypesMock.mockClear();
++
++    await rerender(<SearchPage />);
++
++    expect(setTermMock).toHaveBeenCalledWith('');
++    expect(setFiltersMock).toHaveBeenCalledWith({});
++    expect(setPageCursorMock).toHaveBeenCalledWith('');
++    expect(setTypesMock).toHaveBeenCalledWith([]);
++  });
++
+   it('replaces window history with expected query parameters', async () => {
+     (useSearch as jest.Mock).mockReturnValueOnce({
+       term: 'bieber',
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.tsx b/plugins/search/src/components/SearchPage/SearchPage.tsx
+index 92b327207f..b526ee071e 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.tsx
+@@ -47,18 +47,9 @@ export const UrlUpdater = () => {
+     const query =
+       qs.parse(location.search.substring(1), { arrayLimit: 10000 }) || {};
+ 
+-    if (query.filters) {
+-      setFilters(query.filters as JsonObject);
+-    }
+-
+-    if (query.query) {
+-      setTerm(query.query as string);
+-    }
+-
+-    if (query.pageCursor) {
+-      setPageCursor(query.pageCursor as string);
+-    }
+-
++    setFilters((query.filters as JsonObject) || {});
++    setTerm((query.query as string) || '');
++    setPageCursor((query.pageCursor as string) || '');
+     setTypes(query.types ? (query.types as string[]) : []);
+   }, [prevQueryParams, location, setTerm, setTypes, setPageCursor, setFilters]);
+ 
