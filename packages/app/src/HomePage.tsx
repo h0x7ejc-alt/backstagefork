@@ -27,7 +27,10 @@ import {
   WelcomeTitle,
 } from '@backstage/plugin-home';
 import { Content, Header, Page } from '@backstage/core-components';
+import DescriptionIcon from '@material-ui/icons/Description';
 import HomeIcon from '@material-ui/icons/Home';
+import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
+import SearchIcon from '@material-ui/icons/Search';
 
 const clockConfigs: ClockConfig[] = [
   {
@@ -98,9 +101,24 @@ export const homePage = (
         <HomePageToolkit
           tools={[
             {
-              url: 'https://backstage.io',
-              label: 'Backstage Homepage',
+              url: '/catalog',
+              label: 'Software Catalog',
               icon: <HomeIcon />,
+            },
+            {
+              url: '/docs',
+              label: 'TechDocs',
+              icon: <LibraryBooksIcon />,
+            },
+            {
+              url: '/search',
+              label: 'Search',
+              icon: <SearchIcon />,
+            },
+            {
+              url: '/catalog-import',
+              label: 'Import Component',
+              icon: <DescriptionIcon />,
             },
           ]}
         />
