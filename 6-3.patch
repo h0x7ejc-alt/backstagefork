@@ -1,0 +1,36 @@
+diff --git a/packages/app/src/HomePage.tsx b/packages/app/src/HomePage.tsx
+index 574f285f19..9f0d954d92 100644
+--- a/packages/app/src/HomePage.tsx
++++ b/packages/app/src/HomePage.tsx
+@@ -28,6 +28,9 @@ import {
+ } from '@backstage/plugin-home';
+ import { Content, Header, Page } from '@backstage/core-components';
+ import HomeIcon from '@material-ui/icons/Home';
++import MenuBookIcon from '@material-ui/icons/MenuBook';
++import CategoryIcon from '@material-ui/icons/Category';
++import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
+ 
+ const clockConfigs: ClockConfig[] = [
+   {
+@@ -102,6 +105,21 @@ export const homePage = (
+               label: 'Backstage Homepage',
+               icon: <HomeIcon />,
+             },
++            {
++              url: '/catalog',
++              label: 'Catalog',
++              icon: <CategoryIcon />,
++            },
++            {
++              url: '/create',
++              label: 'Create',
++              icon: <AddCircleOutlineIcon />,
++            },
++            {
++              url: '/docs',
++              label: 'Docs',
++              icon: <MenuBookIcon />,
++            },
+           ]}
+         />
+         <HomePageTopVisited />

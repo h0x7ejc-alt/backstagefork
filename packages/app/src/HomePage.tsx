@@ -28,6 +28,9 @@ import {
 } from '@backstage/plugin-home';
 import { Content, Header, Page } from '@backstage/core-components';
 import HomeIcon from '@material-ui/icons/Home';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
+import CategoryIcon from '@material-ui/icons/Category';
+import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 
 const clockConfigs: ClockConfig[] = [
   {
@@ -101,6 +104,21 @@ export const homePage = (
               url: 'https://backstage.io',
               label: 'Backstage Homepage',
               icon: <HomeIcon />,
+            },
+            {
+              url: '/catalog',
+              label: 'Catalog',
+              icon: <CategoryIcon />,
+            },
+            {
+              url: '/create',
+              label: 'Create',
+              icon: <AddCircleOutlineIcon />,
+            },
+            {
+              url: '/docs',
+              label: 'Docs',
+              icon: <MenuBookIcon />,
             },
           ]}
         />
