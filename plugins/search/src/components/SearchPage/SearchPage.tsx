@@ -47,19 +47,18 @@ export const UrlUpdater = () => {
     const query =
       qs.parse(location.search.substring(1), { arrayLimit: 10000 }) || {};
 
-    if (query.filters) {
-      setFilters(query.filters as JsonObject);
-    }
-
-    if (query.query) {
-      setTerm(query.query as string);
-    }
-
-    if (query.pageCursor) {
-      setPageCursor(query.pageCursor as string);
-    }
-
-    setTypes(query.types ? (query.types as string[]) : []);
+    setFilters(query.filters ? (query.filters as JsonObject) : {});
+    setTerm(typeof query.query === 'string' ? query.query : '');
+    setPageCursor(
+      typeof query.pageCursor === 'string' ? query.pageCursor : undefined,
+    );
+    setTypes(
+      Array.isArray(query.types)
+        ? (query.types as string[])
+        : typeof query.types === 'string'
+          ? [query.types]
+          : [],
+    );
   }, [prevQueryParams, location, setTerm, setTypes, setPageCursor, setFilters]);
 
   useEffect(() => {

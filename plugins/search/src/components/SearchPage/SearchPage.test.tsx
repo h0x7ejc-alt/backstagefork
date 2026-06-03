@@ -15,15 +15,16 @@
  */
 
 import { renderInTestApp } from '@backstage/test-utils';
-import { useLocation } from 'react-router-dom';
 import { useSearch } from '@backstage/plugin-search-react';
 import { SearchPage } from './SearchPage';
 
+let locationSearch = '';
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useLocation: jest.fn().mockReturnValue({
-    search: '',
-  }),
+  useLocation: jest.fn().mockImplementation(() => ({
+    search: locationSearch,
+  })),
   useOutlet: jest.fn().mockReturnValue('Route Children'),
 }));
 
@@ -53,6 +54,8 @@ describe('SearchPage', () => {
   const origReplaceState = window.history.replaceState;
 
   beforeEach(() => {
+    locationSearch = '';
+    jest.clearAllMocks();
     window.history.replaceState = jest.fn();
   });
 
@@ -70,9 +73,7 @@ describe('SearchPage', () => {
     const expectedPageCursor = 'SOMEPAGE';
 
     // e.g. ?query=petstore&pageCursor=SOMEPAGE&filters[lifecycle][]=experimental&filters[kind]=Component
-    (useLocation as jest.Mock).mockReturnValue({
-      search: `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`,
-    });
+    locationSearch = `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`;
 
     // When we render the page...
     await renderInTestApp(<SearchPage />);
@@ -82,6 +83,22 @@ describe('SearchPage', () => {
     expect(setTypesMock).toHaveBeenCalledWith(expectedTypes);
     expect(setPageCursorMock).toHaveBeenCalledWith(expectedPageCursor);
     expect(setFiltersMock).toHaveBeenCalledWith(expectedFilters);
+  });
+
+  it('resets state when location params are removed', async () => {
+    locationSearch =
+      '?query=bieber&types[]=software-catalog&filters[anyKey]=anyValue&pageCursor=SOMEPAGE';
+
+    const { rerender } = await renderInTestApp(<SearchPage />);
+
+    jest.clearAllMocks();
+    locationSearch = '';
+    rerender(<SearchPage />);
+
+    expect(setTermMock).toHaveBeenCalledWith('');
+    expect(setTypesMock).toHaveBeenCalledWith([]);
+    expect(setFiltersMock).toHaveBeenCalledWith({});
+    expect(setPageCursorMock).toHaveBeenCalledWith(undefined);
   });
 
   it('renders provided router element', async () => {

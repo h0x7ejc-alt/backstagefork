@@ -1,0 +1,104 @@
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.test.tsx b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+index 130b9f04e6..77f3d448bd 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.test.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+@@ -15,15 +15,16 @@
+  */
+ 
+ import { renderInTestApp } from '@backstage/test-utils';
+-import { useLocation } from 'react-router-dom';
+ import { useSearch } from '@backstage/plugin-search-react';
+ import { SearchPage } from './SearchPage';
+ 
++let locationSearch = '';
++
+ jest.mock('react-router-dom', () => ({
+   ...jest.requireActual('react-router-dom'),
+-  useLocation: jest.fn().mockReturnValue({
+-    search: '',
+-  }),
++  useLocation: jest.fn().mockImplementation(() => ({
++    search: locationSearch,
++  })),
+   useOutlet: jest.fn().mockReturnValue('Route Children'),
+ }));
+ 
+@@ -53,6 +54,8 @@ describe('SearchPage', () => {
+   const origReplaceState = window.history.replaceState;
+ 
+   beforeEach(() => {
++    locationSearch = '';
++    jest.clearAllMocks();
+     window.history.replaceState = jest.fn();
+   });
+ 
+@@ -70,9 +73,7 @@ describe('SearchPage', () => {
+     const expectedPageCursor = 'SOMEPAGE';
+ 
+     // e.g. ?query=petstore&pageCursor=SOMEPAGE&filters[lifecycle][]=experimental&filters[kind]=Component
+-    (useLocation as jest.Mock).mockReturnValue({
+-      search: `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`,
+-    });
++    locationSearch = `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`;
+ 
+     // When we render the page...
+     await renderInTestApp(<SearchPage />);
+@@ -84,6 +85,22 @@ describe('SearchPage', () => {
+     expect(setFiltersMock).toHaveBeenCalledWith(expectedFilters);
+   });
+ 
++  it('resets state when location params are removed', async () => {
++    locationSearch =
++      '?query=bieber&types[]=software-catalog&filters[anyKey]=anyValue&pageCursor=SOMEPAGE';
++
++    const { rerender } = await renderInTestApp(<SearchPage />);
++
++    jest.clearAllMocks();
++    locationSearch = '';
++    rerender(<SearchPage />);
++
++    expect(setTermMock).toHaveBeenCalledWith('');
++    expect(setTypesMock).toHaveBeenCalledWith([]);
++    expect(setFiltersMock).toHaveBeenCalledWith({});
++    expect(setPageCursorMock).toHaveBeenCalledWith(undefined);
++  });
++
+   it('renders provided router element', async () => {
+     const { getByText } = await renderInTestApp(<SearchPage />);
+ 
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.tsx b/plugins/search/src/components/SearchPage/SearchPage.tsx
+index 92b327207f..f80b6b809b 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.tsx
+@@ -47,19 +47,18 @@ export const UrlUpdater = () => {
+     const query =
+       qs.parse(location.search.substring(1), { arrayLimit: 10000 }) || {};
+ 
+-    if (query.filters) {
+-      setFilters(query.filters as JsonObject);
+-    }
+-
+-    if (query.query) {
+-      setTerm(query.query as string);
+-    }
+-
+-    if (query.pageCursor) {
+-      setPageCursor(query.pageCursor as string);
+-    }
+-
+-    setTypes(query.types ? (query.types as string[]) : []);
++    setFilters(query.filters ? (query.filters as JsonObject) : {});
++    setTerm(typeof query.query === 'string' ? query.query : '');
++    setPageCursor(
++      typeof query.pageCursor === 'string' ? query.pageCursor : undefined,
++    );
++    setTypes(
++      Array.isArray(query.types)
++        ? (query.types as string[])
++        : typeof query.types === 'string'
++          ? [query.types]
++          : [],
++    );
+   }, [prevQueryParams, location, setTerm, setTypes, setPageCursor, setFilters]);
+ 
+   useEffect(() => {
