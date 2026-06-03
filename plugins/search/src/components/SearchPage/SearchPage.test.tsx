@@ -110,4 +110,33 @@ describe('SearchPage', () => {
     const calls = (window.history.replaceState as jest.Mock).mock.calls[0];
     expect(calls[2]).toContain(expectedLocation);
   });
+
+  it('resets state when location search is empty', async () => {
+    // Start with a location that has parameters
+    (useLocation as jest.Mock).mockReturnValue({
+      search: '?query=petstore&pageCursor=SOMEPAGE&filters[kind]=Component',
+    });
+
+    const { rerender } = await renderInTestApp(<SearchPage />);
+
+    // Clear the mocks to only check the calls from the next render
+    setTermMock.mockClear();
+    setTypesMock.mockClear();
+    setPageCursorMock.mockClear();
+    setFiltersMock.mockClear();
+
+    // Change location to empty search
+    (useLocation as jest.Mock).mockReturnValue({
+      search: '',
+    });
+
+    // Rerender the component
+    rerender(<SearchPage />);
+
+    // Then search context should be reset
+    expect(setTermMock).toHaveBeenCalledWith('');
+    expect(setTypesMock).toHaveBeenCalledWith([]);
+    expect(setPageCursorMock).toHaveBeenCalledWith(undefined);
+    expect(setFiltersMock).toHaveBeenCalledWith({});
+  });
 });
