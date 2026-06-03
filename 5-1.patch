@@ -1,0 +1,83 @@
+diff --git a/packages/backend/src/authModuleGithubProvider.ts b/packages/backend/src/authModuleGithubProvider.ts
+index 9245600d2c..b537929f1f 100644
+--- a/packages/backend/src/authModuleGithubProvider.ts
++++ b/packages/backend/src/authModuleGithubProvider.ts
+@@ -19,12 +19,63 @@ import {
+   DEFAULT_NAMESPACE,
+   stringifyEntityRef,
+ } from '@backstage/catalog-model';
+-import { githubAuthenticator } from '@backstage/plugin-auth-backend-module-github-provider';
++import {
++  githubAuthenticator,
++  type GithubProfile,
++} from '@backstage/plugin-auth-backend-module-github-provider';
+ import {
+   authProvidersExtensionPoint,
+   createOAuthProviderFactory,
+ } from '@backstage/plugin-auth-node';
+ 
++const normalizeUserId = (value?: string) => {
++  const normalized = value?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
++  return normalized?.replace(/^-+|-+$/g, '') || undefined;
++};
++
++const getUserIdFromProfile = (fullProfile: GithubProfile) => {
++  if (fullProfile.username?.trim()) {
++    return fullProfile.username;
++  }
++
++  let emailUserId: string | undefined;
++  for (const email of fullProfile.emails ?? []) {
++    if (email.value?.trim()) {
++      emailUserId = email.value.split('@')[0];
++      break;
++    }
++  }
++
++  const nameParts = [
++    fullProfile.name?.givenName,
++    fullProfile.name?.middleName,
++    fullProfile.name?.familyName,
++  ].filter((part): part is string => Boolean(part));
++
++  const profileUrlParts = fullProfile.profileUrl?.split('/').filter(Boolean);
++  const profileUrlUserId = profileUrlParts?.[profileUrlParts.length - 1];
++
++  const fallbackCandidates = [
++    emailUserId,
++    nameParts.join(' '),
++    fullProfile.displayName,
++    fullProfile.id,
++    fullProfile.nodeId,
++    profileUrlUserId,
++  ];
++
++  for (const candidate of fallbackCandidates) {
++    const normalizedCandidate = normalizeUserId(candidate);
++    if (normalizedCandidate) {
++      return normalizedCandidate;
++    }
++  }
++
++  throw new Error(
++    'GitHub user profile does not contain enough information to determine a user identifier',
++  );
++};
++
+ export default createBackendModule({
+   pluginId: 'auth',
+   moduleId: 'githubProvider',
+@@ -37,12 +88,7 @@ export default createBackendModule({
+           factory: createOAuthProviderFactory({
+             authenticator: githubAuthenticator,
+             async signInResolver({ result: { fullProfile } }, ctx) {
+-              const userId = fullProfile.username;
+-              if (!userId) {
+-                throw new Error(
+-                  `GitHub user profile does not contain a username`,
+-                );
+-              }
++              const userId = getUserIdFromProfile(fullProfile);
+ 
+               const userEntityRef = stringifyEntityRef({
+                 kind: 'User',
