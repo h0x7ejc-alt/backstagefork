@@ -1,0 +1,40 @@
+diff --git a/packages/app/src/HomePage.tsx b/packages/app/src/HomePage.tsx
+index 574f285f19..a3e757f4f7 100644
+--- a/packages/app/src/HomePage.tsx
++++ b/packages/app/src/HomePage.tsx
+@@ -28,6 +28,9 @@ import {
+ } from '@backstage/plugin-home';
+ import { Content, Header, Page } from '@backstage/core-components';
+ import HomeIcon from '@material-ui/icons/Home';
++import DescriptionIcon from '@material-ui/icons/Description';
++import StorageIcon from '@material-ui/icons/Storage';
++import BuildIcon from '@material-ui/icons/Build';
+ 
+ const clockConfigs: ClockConfig[] = [
+   {
+@@ -99,9 +102,24 @@ export const homePage = (
+           tools={[
+             {
+               url: 'https://backstage.io',
+-              label: 'Backstage Homepage',
++              label: 'Backstage',
+               icon: <HomeIcon />,
+             },
++            {
++              url: '/docs',
++              label: 'TechDocs',
++              icon: <DescriptionIcon />,
++            },
++            {
++              url: '/kubernetes',
++              label: 'Kubernetes',
++              icon: <StorageIcon />,
++            },
++            {
++              url: '/create',
++              label: 'Create...',
++              icon: <BuildIcon />,
++            },
+           ]}
+         />
+         <HomePageTopVisited />

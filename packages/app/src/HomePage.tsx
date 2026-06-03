@@ -28,6 +28,9 @@ import {
 } from '@backstage/plugin-home';
 import { Content, Header, Page } from '@backstage/core-components';
 import HomeIcon from '@material-ui/icons/Home';
+import DescriptionIcon from '@material-ui/icons/Description';
+import StorageIcon from '@material-ui/icons/Storage';
+import BuildIcon from '@material-ui/icons/Build';
 
 const clockConfigs: ClockConfig[] = [
   {
@@ -99,8 +102,23 @@ export const homePage = (
           tools={[
             {
               url: 'https://backstage.io',
-              label: 'Backstage Homepage',
+              label: 'Backstage',
               icon: <HomeIcon />,
+            },
+            {
+              url: '/docs',
+              label: 'TechDocs',
+              icon: <DescriptionIcon />,
+            },
+            {
+              url: '/kubernetes',
+              label: 'Kubernetes',
+              icon: <StorageIcon />,
+            },
+            {
+              url: '/create',
+              label: 'Create...',
+              icon: <BuildIcon />,
             },
           ]}
         />
