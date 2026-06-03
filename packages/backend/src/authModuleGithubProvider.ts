@@ -25,6 +25,39 @@ import {
   createOAuthProviderFactory,
 } from '@backstage/plugin-auth-node';
 
+function deriveUserId(fullProfile: {
+  username?: string;
+  email?: string;
+  emails?: Array<{ value: string; type?: string }>;
+  displayName?: string;
+  id?: string;
+}): string {
+  if (fullProfile.username) {
+    return fullProfile.username;
+  }
+
+  const email =
+    fullProfile.email || fullProfile.emails?.[0]?.value?.replace(/@.*$/, '');
+  if (email) {
+    return email.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  if (fullProfile.displayName) {
+    return fullProfile.displayName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  if (fullProfile.id) {
+    return fullProfile.id;
+  }
+
+  throw new Error(
+    'GitHub user profile does not contain any identifiable field',
+  );
+}
+
 export default createBackendModule({
   pluginId: 'auth',
   moduleId: 'githubProvider',
@@ -37,12 +70,7 @@ export default createBackendModule({
           factory: createOAuthProviderFactory({
             authenticator: githubAuthenticator,
             async signInResolver({ result: { fullProfile } }, ctx) {
-              const userId = fullProfile.username;
-              if (!userId) {
-                throw new Error(
-                  `GitHub user profile does not contain a username`,
-                );
-              }
+              const userId = deriveUserId(fullProfile);
 
               const userEntityRef = stringifyEntityRef({
                 kind: 'User',
