@@ -1,0 +1,48 @@
+diff --git a/packages/app/src/HomePage.tsx b/packages/app/src/HomePage.tsx
+index 574f285f19..b5f0cbd0d4 100644
+--- a/packages/app/src/HomePage.tsx
++++ b/packages/app/src/HomePage.tsx
+@@ -28,6 +28,11 @@ import {
+ } from '@backstage/plugin-home';
+ import { Content, Header, Page } from '@backstage/core-components';
+ import HomeIcon from '@material-ui/icons/Home';
++import CodeIcon from '@material-ui/icons/Code';
++import BuildIcon from '@material-ui/icons/Build';
++import BookIcon from '@material-ui/icons/Book';
++import GitHubIcon from '@material-ui/icons/GitHub';
++import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
+ 
+ const clockConfigs: ClockConfig[] = [
+   {
+@@ -102,6 +107,31 @@ export const homePage = (
+               label: 'Backstage Homepage',
+               icon: <HomeIcon />,
+             },
++            {
++              url: '/catalog',
++              label: 'Catalog',
++              icon: <CodeIcon />,
++            },
++            {
++              url: '/create',
++              label: 'Scaffolder',
++              icon: <BuildIcon />,
++            },
++            {
++              url: '/docs',
++              label: 'TechDocs',
++              icon: <LibraryBooksIcon />,
++            },
++            {
++              url: 'https://backstage.io/docs',
++              label: 'Backstage Docs',
++              icon: <BookIcon />,
++            },
++            {
++              url: 'https://github.com/backstage/backstage',
++              label: 'GitHub',
++              icon: <GitHubIcon />,
++            },
+           ]}
+         />
+         <HomePageTopVisited />
