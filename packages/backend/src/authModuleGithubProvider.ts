@@ -36,11 +36,15 @@ export default createBackendModule({
           providerId: 'github',
           factory: createOAuthProviderFactory({
             authenticator: githubAuthenticator,
-            async signInResolver({ result: { fullProfile } }, ctx) {
-              const userId = fullProfile.username;
+            async signInResolver({ result: { fullProfile }, profile }, ctx) {
+              const userId =
+                fullProfile.username ||
+                (profile.email && profile.email.split('@')[0]) ||
+                (fullProfile.id ? fullProfile.id.toString() : undefined);
+
               if (!userId) {
                 throw new Error(
-                  `GitHub user profile does not contain a username`,
+                  `GitHub user profile does not contain a username or other identifying fields`,
                 );
               }
 
