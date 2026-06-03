@@ -49,14 +49,20 @@ export const UrlUpdater = () => {
 
     if (query.filters) {
       setFilters(query.filters as JsonObject);
+    } else {
+      setFilters({});
     }
 
     if (query.query) {
       setTerm(query.query as string);
+    } else {
+      setTerm('');
     }
 
     if (query.pageCursor) {
       setPageCursor(query.pageCursor as string);
+    } else {
+      setPageCursor('');
     }
 
     setTypes(query.types ? (query.types as string[]) : []);

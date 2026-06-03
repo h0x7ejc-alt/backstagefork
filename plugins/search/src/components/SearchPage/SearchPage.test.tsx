@@ -110,4 +110,17 @@ describe('SearchPage', () => {
     const calls = (window.history.replaceState as jest.Mock).mock.calls[0];
     expect(calls[2]).toContain(expectedLocation);
   });
+
+  it('resets state when URL params are removed', async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      search: '',
+    });
+
+    await renderInTestApp(<SearchPage />);
+
+    expect(setTermMock).toHaveBeenCalledWith('');
+    expect(setTypesMock).toHaveBeenCalledWith([]);
+    expect(setPageCursorMock).toHaveBeenCalledWith('');
+    expect(setFiltersMock).toHaveBeenCalledWith({});
+  });
 });

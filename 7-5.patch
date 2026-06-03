@@ -1,0 +1,47 @@
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.test.tsx b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+index 130b9f04e6..f5b5645936 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.test.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+@@ -110,4 +110,17 @@ describe('SearchPage', () => {
+     const calls = (window.history.replaceState as jest.Mock).mock.calls[0];
+     expect(calls[2]).toContain(expectedLocation);
+   });
++
++  it('resets state when URL params are removed', async () => {
++    (useLocation as jest.Mock).mockReturnValue({
++      search: '',
++    });
++
++    await renderInTestApp(<SearchPage />);
++
++    expect(setTermMock).toHaveBeenCalledWith('');
++    expect(setTypesMock).toHaveBeenCalledWith([]);
++    expect(setPageCursorMock).toHaveBeenCalledWith('');
++    expect(setFiltersMock).toHaveBeenCalledWith({});
++  });
+ });
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.tsx b/plugins/search/src/components/SearchPage/SearchPage.tsx
+index 92b327207f..d8e9cb9585 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.tsx
+@@ -49,14 +49,20 @@ export const UrlUpdater = () => {
+ 
+     if (query.filters) {
+       setFilters(query.filters as JsonObject);
++    } else {
++      setFilters({});
+     }
+ 
+     if (query.query) {
+       setTerm(query.query as string);
++    } else {
++      setTerm('');
+     }
+ 
+     if (query.pageCursor) {
+       setPageCursor(query.pageCursor as string);
++    } else {
++      setPageCursor('');
+     }
+ 
+     setTypes(query.types ? (query.types as string[]) : []);
