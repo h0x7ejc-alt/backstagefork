@@ -53,11 +53,49 @@ describe('SearchPage', () => {
   const origReplaceState = window.history.replaceState;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     window.history.replaceState = jest.fn();
   });
 
   afterEach(() => {
     window.history.replaceState = origReplaceState;
+  });
+
+  it('resets state to defaults when URL parameters are removed', async () => {
+    // Given an initial URL with parameters...
+    const expectedFilterField = 'anyKey';
+    const expectedFilterValue = 'anyValue';
+    const expectedTerm = 'justin bieber';
+    const expectedTypes = ['software-catalog'];
+    const expectedFilters = { [expectedFilterField]: expectedFilterValue };
+    const expectedPageCursor = 'SOMEPAGE';
+
+    (useLocation as jest.Mock).mockReturnValue({
+      search: `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`,
+    });
+
+    // First render with parameters
+    await renderInTestApp(<SearchPage />);
+
+    // Clear mock calls to track the next update
+    setTermMock.mockClear();
+    setTypesMock.mockClear();
+    setFiltersMock.mockClear();
+    setPageCursorMock.mockClear();
+
+    // Now update location to have empty search parameters
+    (useLocation as jest.Mock).mockReturnValue({
+      search: '',
+    });
+
+    // Re-render with empty URL
+    await renderInTestApp(<SearchPage />);
+
+    // Then search context should be reset to defaults
+    expect(setTermMock).toHaveBeenCalledWith('');
+    expect(setTypesMock).toHaveBeenCalledWith([]);
+    expect(setPageCursorMock).toHaveBeenCalledWith(undefined);
+    expect(setFiltersMock).toHaveBeenCalledWith({});
   });
 
   it('sets term state from location', async () => {

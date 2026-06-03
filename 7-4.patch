@@ -1,0 +1,82 @@
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.test.tsx b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+index 130b9f04e6..25c245bac2 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.test.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.test.tsx
+@@ -53,6 +53,7 @@ describe('SearchPage', () => {
+   const origReplaceState = window.history.replaceState;
+ 
+   beforeEach(() => {
++    jest.clearAllMocks();
+     window.history.replaceState = jest.fn();
+   });
+ 
+@@ -60,6 +61,43 @@ describe('SearchPage', () => {
+     window.history.replaceState = origReplaceState;
+   });
+ 
++  it('resets state to defaults when URL parameters are removed', async () => {
++    // Given an initial URL with parameters...
++    const expectedFilterField = 'anyKey';
++    const expectedFilterValue = 'anyValue';
++    const expectedTerm = 'justin bieber';
++    const expectedTypes = ['software-catalog'];
++    const expectedFilters = { [expectedFilterField]: expectedFilterValue };
++    const expectedPageCursor = 'SOMEPAGE';
++
++    (useLocation as jest.Mock).mockReturnValue({
++      search: `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`,
++    });
++
++    // First render with parameters
++    await renderInTestApp(<SearchPage />);
++
++    // Clear mock calls to track the next update
++    setTermMock.mockClear();
++    setTypesMock.mockClear();
++    setFiltersMock.mockClear();
++    setPageCursorMock.mockClear();
++
++    // Now update location to have empty search parameters
++    (useLocation as jest.Mock).mockReturnValue({
++      search: '',
++    });
++
++    // Re-render with empty URL
++    await renderInTestApp(<SearchPage />);
++
++    // Then search context should be reset to defaults
++    expect(setTermMock).toHaveBeenCalledWith('');
++    expect(setTypesMock).toHaveBeenCalledWith([]);
++    expect(setPageCursorMock).toHaveBeenCalledWith(undefined);
++    expect(setFiltersMock).toHaveBeenCalledWith({});
++  });
++
+   it('sets term state from location', async () => {
+     // Given this initial location.search value...
+     const expectedFilterField = 'anyKey';
+diff --git a/plugins/search/src/components/SearchPage/SearchPage.tsx b/plugins/search/src/components/SearchPage/SearchPage.tsx
+index 92b327207f..766134ad61 100644
+--- a/plugins/search/src/components/SearchPage/SearchPage.tsx
++++ b/plugins/search/src/components/SearchPage/SearchPage.tsx
+@@ -47,18 +47,9 @@ export const UrlUpdater = () => {
+     const query =
+       qs.parse(location.search.substring(1), { arrayLimit: 10000 }) || {};
+ 
+-    if (query.filters) {
+-      setFilters(query.filters as JsonObject);
+-    }
+-
+-    if (query.query) {
+-      setTerm(query.query as string);
+-    }
+-
+-    if (query.pageCursor) {
+-      setPageCursor(query.pageCursor as string);
+-    }
+-
++    setFilters(query.filters ? (query.filters as JsonObject) : {});
++    setTerm(query.query ? (query.query as string) : '');
++    setPageCursor(query.pageCursor ? (query.pageCursor as string) : undefined);
+     setTypes(query.types ? (query.types as string[]) : []);
+   }, [prevQueryParams, location, setTerm, setTypes, setPageCursor, setFilters]);
+ 
